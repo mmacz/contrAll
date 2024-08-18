@@ -17,3 +17,8 @@ class ContrAllConan(ConanFile):
         self.requires("ftxui/5.0.0")
         self.requires("libusb/1.0.26")
 
+    def build(self):
+        cmake = CMake(self)
+        cmake.configure()
+        cmake.build()
+
