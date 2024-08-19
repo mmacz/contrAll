@@ -3,7 +3,7 @@ target_include_directories(contrAll PRIVATE include)
 
 target_link_libraries(contrAll
     PRIVATE
-        libusb::libusb
+        controller
 )
 
 target_compile_definitions(contrAll

@@ -11,5 +11,6 @@ list(PREPEND CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR}/generators)
 find_package(libusb REQUIRED)
 find_package(ftxui REQUIRED)
 
+add_subdirectory(controller)
 add_subdirectory(app)
 
