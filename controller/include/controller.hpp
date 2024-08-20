@@ -42,12 +42,20 @@ struct ControllerDesc {
     }
 };
 
+struct ControllerData {
+    uint8_t *pData;
+    size_t size;
+};
+
 class ControllersPrv;
 class Controllers {
     public:
         Controllers();
         ~Controllers();
         const std::vector<ControllerDesc> get_connected() const;
+        void open_device(const ControllerDesc& desc);
+        void close_device();
+        const ControllerData& read_from_device();
     private:
         std::unique_ptr<ControllersPrv> mImpl;
 };
