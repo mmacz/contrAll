@@ -42,12 +42,13 @@ struct ControllerDesc {
     }
 };
 
+class ControllersPrv;
 class Controllers {
     public:
-        Controllers() : mpUsbCtx{nullptr} {};
+        Controllers();
         ~Controllers();
-        const std::vector<ControllerDesc> get_devices();
+        const std::vector<ControllerDesc> get_connected() const;
     private:
-        void *mpUsbCtx;
+        std::unique_ptr<ControllersPrv> mImpl;
 };
 

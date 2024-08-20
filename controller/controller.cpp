@@ -1,6 +1,8 @@
 #include <array>
 #include <algorithm>
 #include <cassert>
+#include <memory>
+#include <stdexcept>
 #include "controller.hpp"
 extern "C" {
  #include "libusb.h"
@@ -25,19 +27,45 @@ static ControllerDesc MakeDesc(const libusb_device_descriptor& desc) {
     return d;
 }
 
-Controllers::~Controllers() {
-    libusb_exit((libusb_context*)mpUsbCtx);
+class ControllersPrv {
+    public:
+        ControllersPrv();
+        ~ControllersPrv();
+        const std::vector<ControllerDesc> get_connected() const;
+    private:
+        libusb_context *mpCtx;
+};
+
+Controllers::Controllers() {
+    mImpl.reset(new ControllersPrv());
 }
 
-const std::vector<ControllerDesc> Controllers::get_devices() {
+Controllers::~Controllers() {
+}
+
+ControllersPrv::ControllersPrv() 
+    : mpCtx{nullptr} {
+    auto rc = libusb_init(&mpCtx);
+    assert(rc == LIBUSB_SUCCESS);
+}
+
+ControllersPrv::~ControllersPrv() {
+    libusb_exit(mpCtx);
+    mpCtx = nullptr;
+}
+
+const std::vector<ControllerDesc> Controllers::get_connected() const {
+    if (!mImpl) {
+        throw std::runtime_error("Not initialized");
+    }
+    return mImpl->get_connected();
+}
+
+const std::vector<ControllerDesc> ControllersPrv::get_connected() const {
     std::vector<ControllerDesc> devices;
 
-    libusb_context* usbCtx = (libusb_context*)mpUsbCtx;
-    auto rc = libusb_init(&usbCtx);
-    assert(rc == LIBUSB_SUCCESS);
-
     libusb_device **ppDevices;
-    auto numDevices = libusb_get_device_list(usbCtx, &ppDevices);
+    auto numDevices = libusb_get_device_list(mpCtx, &ppDevices);
 
     for (int devIdx = 0; devIdx < numDevices; ++devIdx) {
         const auto *pDev = ppDevices[devIdx];
@@ -58,5 +86,6 @@ const std::vector<ControllerDesc> Controllers::get_devices() {
     libusb_free_device_list(ppDevices, 1);
 
     return devices;
+
 }
 
