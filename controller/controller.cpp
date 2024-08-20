@@ -38,6 +38,7 @@ class ControllersPrv {
     private:
         libusb_context *mpCtx;
         libusb_device_handle *mhDev;
+        libusb_device *mpDev;
         ControllerData mData;
         std::array<uint8_t, 1024> mDataBuff;
 };
@@ -120,6 +121,8 @@ void ControllersPrv::open_device(const ControllerDesc& desc) {
     if (!mhDev) {
         throw std::runtime_error("Cannot get device handle");
     }
+    mpDev = libusb_get_device(mhDev);
+    mpDev = libusb_ref_device(mpDev);
 }
 
 void Controllers::close_device() {
@@ -130,6 +133,8 @@ void Controllers::close_device() {
 }
 
 void ControllersPrv::close_device() {
+    libusb_unref_device(mpDev);
+    mpDev = nullptr;
     libusb_close(mhDev);
     mhDev = nullptr;
 }
@@ -143,10 +148,20 @@ const ControllerData& Controllers::read_from_device() {
 
 const ControllerData& ControllersPrv::read_from_device() {
     int32_t readDataSize {0};
+
+    if (libusb_kernel_driver_active(mhDev, 0)) {
+        libusb_detach_kernel_driver(mhDev, 0);
+    }
+    
+    libusb_claim_interface(mhDev, 0);
     int rc = libusb_bulk_transfer(mhDev, LIBUSB_ENDPOINT_IN, mDataBuff.data(), mDataBuff.size(), &readDataSize, 100);
+    libusb_release_interface(mhDev, 0);
+
     std::cout << std::format("Transfer rc: {}\n", rc);
     mData.pData = mDataBuff.data();
     mData.size = readDataSize;
+
+    libusb_attach_kernel_driver(mhDev, 0);
     return mData;
 }
 
